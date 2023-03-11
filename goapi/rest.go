@@ -28,7 +28,13 @@ func genRestMethodCode(fd *descriptor.FileDescriptorProto, serv *descriptor.Serv
 
 	httpInfo := getHTTPInfo(meth)
 	ps := baseURL(httpInfo)
-	code.WriteString(fmt.Sprintf("rawURL := c.addr + fmt.Sprintf(%s)\n", ps))
+	if len(ps) > 1 {
+		code.WriteString(fmt.Sprintf("rawURL := c.addr + fmt.Sprintf(%s)\n", strings.Join(ps, ",")))
+	} else if len(ps) == 1 {
+		code.WriteString(fmt.Sprintf("rawURL := c.addr + %s\n", ps[0]))
+	} else {
+		code.WriteString("rawURL := c.addr\n")
+	}
 	body := "nil"
 	verb := strings.ToUpper(httpInfo.verb)
 	if httpInfo.body != "" {
@@ -78,7 +84,7 @@ func getHTTPInfo(m *descriptor.MethodDescriptorProto) *httpInfo {
 	return &info
 }
 
-func baseURL(info *httpInfo) string {
+func baseURL(info *httpInfo) []string {
 	fmtStr := info.url
 	// TODO(noahdietz): handle more complex path urls involving = and *,
 	// e.g. v1beta1/repeat/{info.f_string=first/*}/{info.f_child.f_string=second/**}:pathtrailingresource
@@ -92,7 +98,7 @@ func baseURL(info *httpInfo) string {
 		// See the docs for FindStringSubmatch for further details.
 		tokens = append(tokens, fmt.Sprintf("in%s", fieldGetter(path[1])))
 	}
-	return strings.Join(tokens, ",")
+	return tokens
 }
 
 // Given a chained description for a field in a proto message,
