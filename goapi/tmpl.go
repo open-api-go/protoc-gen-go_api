@@ -29,13 +29,13 @@ type {{ .ServName }}Service interface {
 
 type {{ unexport .ServName }}Service struct {
 	addr    string            // start with http/https
-	session grequests.Session // requests session
+	session *grequests.Session // requests session
 }
 
-func New{{ .ServName }}Service(addr string, opts ...grequests.RequestOption) {{ .ServName }}Service {
+func New{{ .ServName }}Service(opts ...grequests.RequestOption) {{ .ServName }}Service {
 	return &{{ unexport .ServName }}Service{
-		addr:    addr,
-		session: grequests.NewSession(opts...)
+		addr:   "https://{{ .PkgName }}",
+		session: grequests.NewSession(opts...),
 	}
 }
 

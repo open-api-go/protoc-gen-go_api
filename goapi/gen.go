@@ -45,7 +45,7 @@ func parseRestFile(fd *descriptor.FileDescriptorProto) (*FileData, error) {
 	data := &FileData{
 		Version:   Release,
 		Source:    fd.GetName(),
-		GoPackage: ps[len(ps)-1],
+		GoPackage: strings.ReplaceAll(ps[len(ps)-1], "-", "_"),
 	}
 	servs := fd.GetService()
 
@@ -62,6 +62,7 @@ func parseRestFile(fd *descriptor.FileDescriptorProto) (*FileData, error) {
 
 func parseRestService(fd *descriptor.FileDescriptorProto, serv *descriptor.ServiceDescriptorProto) (*ServiceData, error) {
 	data := &ServiceData{
+		PkgName:  fd.GetPackage(),
 		ServName: strings.ReplaceAll(serv.GetName(), "Service", ""),
 	}
 

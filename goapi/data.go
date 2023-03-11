@@ -12,11 +12,12 @@ var (
 type FileData struct {
 	Version   string         // 版本号
 	Source    string         // 源文件
-	GoPackage string         // Go报名
+	GoPackage string         // Go包名
 	Services  []*ServiceData // 服务数据
 }
 
 type ServiceData struct {
+	PkgName  string        // package name
 	ServName string        // 服务名，不带Service的
 	Methods  []*MethodData // 方法数据
 }
