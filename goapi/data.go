@@ -1,7 +1,12 @@
 package goapi
 
+import "strings"
+
 var (
-	fn = map[string]interface{}{}
+	fn = map[string]interface{}{
+		"unexport": unexport,
+		"html":     html,
+	}
 )
 
 type FileData struct {
@@ -22,4 +27,22 @@ type MethodData struct {
 	Comment  string // 注释。只取头注释
 	ReqTyp   string // 请求类型名
 	ResTyp   string // 返回类型名
+	ReqCode  string // 请求代码
+}
+
+var (
+	noClientStream = `return nil, fmt.Errorf("%s not yet supported for REST clients")`
+	noServerStream = `return nil, fmt.Errorf("%s not yet supported for REST servers")`
+)
+
+// unexport 把首字母转小写
+func unexport(s string) string {
+	if len(s) == 0 {
+		return ""
+	}
+	return strings.ToLower(s[:1]) + s[1:]
+}
+
+func html(s string) string {
+	return s
 }

@@ -13,6 +13,7 @@ package {{ .GoPackage }}
 
 import (
 	context "context"
+	fmt "fmt"
 	grequests "github.com/open-api-go/grequests"
 )
 
@@ -22,28 +23,28 @@ import (
 type {{ .ServName }}Service interface {
 {{ range .Methods }}
 	// {{ .MethName }} {{ .Comment }}
-	{{ .MethName }}(ctx context.Context, in *{{ .ReqTyp }}, opts ...grequests.RequestOption) (*grequest.Response, error)
+	{{ .MethName }}(ctx context.Context, in *{{ .ReqTyp }}, opts ...grequests.RequestOption) (*grequests.Response, error)
 {{ end }}
 }
 
 type {{ unexport .ServName }}Service struct {
-	addr string // start with http/https
+	addr    string            // start with http/https
+	session grequests.Session // requests session
 }
 
-func New{{ .ServName }}Service(addr string) {{ .ServName }}Service {
+func New{{ .ServName }}Service(addr string, opts ...grequests.RequestOption) {{ .ServName }}Service {
 	return &{{ unexport .ServName }}Service{
-		addr: addr,
+		addr:    addr,
+		session: grequests.NewSession(opts...)
 	}
 }
 
 {{ range .Methods }}
-func (c *{{ unexport .ServName }}Service) {{ .MethName }}(ctx context.Context, in *{{ .ReqTyp }}, opts ...grequests.RequestOption) (*grequest.Response, error) {
-
+func (c *{{ unexport .ServName }}Service) {{ .MethName }}(ctx context.Context, in *{{ .ReqTyp }}, opts ...grequests.RequestOption) (*grequests.Response, error) {
+	{{ .ReqCode | html }}
 }
-{{ end }}
-
-{{ end }}
-
+{{ end -}}
+{{ end -}}
 `
 
 func getGoapiContent(data *FileData) (string, error) {
