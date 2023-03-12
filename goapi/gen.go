@@ -11,6 +11,7 @@ import (
 
 func Gen(req *plugin.CodeGeneratorRequest) (*plugin.CodeGeneratorResponse, error) {
 	initRest(req)
+	initComment(req)
 	opts, err := parseOptions(req.Parameter)
 	if err != nil {
 		return nil, err
@@ -82,7 +83,7 @@ func parseRestMethod(fd *descriptor.FileDescriptorProto, serv *descriptor.Servic
 	data := &MethodData{
 		ServName: strings.ReplaceAll(serv.GetName(), "Service", ""),
 		MethName: meth.GetName(),
-		Comment:  "",
+		Comment:  getComment(meth),
 		ReqTyp:   typeName(meth.GetInputType()),
 		ResTyp:   typeName(meth.GetOutputType()),
 	}

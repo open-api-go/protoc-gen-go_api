@@ -21,10 +21,10 @@ import (
 // Client API for {{ .ServName }} service
 
 type {{ .ServName }}Service interface {
-{{ range .Methods }}
+{{- range .Methods }}
 	// {{ .MethName }} {{ .Comment }}
 	{{ .MethName }}(ctx context.Context, in *{{ .ReqTyp }}, opts ...grequests.RequestOption) (*grequests.Response, error)
-{{ end }}
+{{- end }}
 }
 
 type {{ unexport .ServName }}Service struct {

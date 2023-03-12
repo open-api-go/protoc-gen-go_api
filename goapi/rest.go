@@ -79,7 +79,7 @@ func genRestMethodCode(fd *descriptor.FileDescriptorProto, serv *descriptor.Serv
 	if len(ps) > 0 {
 		code.WriteString(fmt.Sprintf("rawURL := fmt.Sprintf(%q, c.addr, %s)\n", rawURL, strings.Join(ps, ",")))
 	} else {
-		code.WriteString(fmt.Sprintf("rawURL := fmt.Sprint(%q, c.addr)\n", rawURL))
+		code.WriteString(fmt.Sprintf("rawURL := fmt.Sprintf(%q, c.addr)\n", rawURL))
 	}
 
 	// 还有一些，没有写在uri里面的，从结构体里面解析
