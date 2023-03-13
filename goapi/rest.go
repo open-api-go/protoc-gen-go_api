@@ -212,15 +212,15 @@ func bodyForm(m *descriptor.MethodDescriptorProto, info *httpInfo) []string {
 		}
 	}
 
-	return formParams(queryParams)
+	return formParams("bodyForms", queryParams)
 }
 
 func queryString(m *descriptor.MethodDescriptorProto) []string {
 	queryParams := queryParams(m)
-	return formParams(queryParams)
+	return formParams("params", queryParams)
 }
 
-func formParams(queryParams map[string]*descriptor.FieldDescriptorProto) []string {
+func formParams(keyName string, queryParams map[string]*descriptor.FieldDescriptorProto) []string {
 	// We want to iterate over fields in a deterministic order
 	// to prevent spurious deltas when regenerating gapics.
 	fields := make([]string, 0, len(queryParams))
@@ -248,10 +248,10 @@ func formParams(queryParams map[string]*descriptor.FieldDescriptorProto) []strin
 			b.WriteString("if err != nil {\n")
 			b.WriteString("  return nil, err\n")
 			b.WriteString("}\n")
-			b.WriteString(fmt.Sprintf("params[%q] = string(%s)", key, field.GetJsonName()))
+			b.WriteString(fmt.Sprintf("%s[%q] = string(%s)", keyName, key, field.GetJsonName()))
 			paramAdd = b.String()
 		} else {
-			paramAdd = fmt.Sprintf("params[%q] = fmt.Sprintf(%q, in%s)", key, "%v", accessor)
+			paramAdd = fmt.Sprintf("%s[%q] = fmt.Sprintf(%q, in%s)", keyName, key, "%v", accessor)
 		}
 
 		// Only required, singular, primitive field types should be added regardless.
@@ -266,7 +266,7 @@ func formParams(queryParams map[string]*descriptor.FieldDescriptorProto) []strin
 			params = append(params, fmt.Sprintf("if items := in%s; len(items) > 0 {", accessor))
 			b := strings.Builder{}
 			b.WriteString("for _, item := range items {\n")
-			b.WriteString(fmt.Sprintf("  params[%q] = fmt.Sprintf(%q, item)\n", key, "%v"))
+			b.WriteString(fmt.Sprintf("  %s[%q] = fmt.Sprintf(%q, item)\n", keyName, key, "%v"))
 			b.WriteString("}")
 			paramAdd = b.String()
 

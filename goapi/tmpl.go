@@ -48,11 +48,11 @@ func (c *{{ unexport .ServName }}Service) {{ .MethName }}(ctx context.Context, i
 `
 
 var bodyFormTmpl = `	// 处理form的body
-	forms := make(map[string]string)
+	bodyForms := make(map[string]string)
 	{{ .BodyForm | html }}
-	if len(forms) > 0 {
+	if len(bodyForms) > 0 {
 		var bs string
-		for k, v := range forms {
+		for k, v := range bodyForms {
 			bs = fmt.Sprintf("%s&%s=%s", bs, k, v)
 		}
 		headers := map[string]string {
