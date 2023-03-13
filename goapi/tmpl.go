@@ -47,6 +47,28 @@ func (c *{{ unexport .ServName }}Service) {{ .MethName }}(ctx context.Context, i
 {{ end -}}
 `
 
+var bodyFormTmpl = `	// 处理form的body
+	forms := make(map[string]string)
+	{{ .BodyForm | html }}
+	if len(forms) > 0 {
+	var bs string
+	for k, v := range forms {
+		bs = fmt.Sprintf("%s&%s=%s", bs, k, v)
+	}
+	headers := map[string]string {
+		"Content-Type": "application/x-www-form-urlencoded",
+	}
+	opts = append(opts, grequests.RequestBody(strings.NewReader(bs)), grequests.AddHeaders(headers))
+`
+
+var queryStringTmpl = `	// 处理query string
+	params := make(map[string]string)
+	{{ .QueryString | html }}
+	if len(params) > 0 {
+		opts = append(opts, grequests.Params(params))
+	}
+`
+
 func getGoapiContent(data *FileData) (string, error) {
 	cm, err := template.New("goapi_tmpl").Funcs(fn).Parse(goapiTmpl)
 	if err != nil {
@@ -57,6 +79,40 @@ func getGoapiContent(data *FileData) (string, error) {
 	err = cm.Execute(bs, data)
 	if err != nil {
 		log.Println("execute goapi template err: ", err)
+		return "", err
+	}
+	return bs.String(), nil
+}
+
+func getBodyFormContent(forms string) (string, error) {
+	cm, err := template.New("bodyform_tmpl").Funcs(fn).Parse(bodyFormTmpl)
+	if err != nil {
+		log.Println("parse body form template err: ", err)
+		return "", err
+	}
+	bs := new(bytes.Buffer)
+	err = cm.Execute(bs, map[string]string{
+		"BodyForm": forms,
+	})
+	if err != nil {
+		log.Println("execute body form template err: ", err)
+		return "", err
+	}
+	return bs.String(), nil
+}
+
+func getQueryStringContent(param string) (string, error) {
+	cm, err := template.New("querystring_tmpl").Funcs(fn).Parse(queryStringTmpl)
+	if err != nil {
+		log.Println("parse query string template err: ", err)
+		return "", err
+	}
+	bs := new(bytes.Buffer)
+	err = cm.Execute(bs, map[string]string{
+		"QueryString": param,
+	})
+	if err != nil {
+		log.Println("execute query string template err: ", err)
 		return "", err
 	}
 	return bs.String(), nil

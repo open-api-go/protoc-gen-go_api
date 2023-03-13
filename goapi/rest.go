@@ -38,6 +38,9 @@ const (
 	fieldLabelRepeated      = descriptor.FieldDescriptorProto_LABEL_REPEATED
 	defaultPollInitialDelay = "time.Second" // 1 second
 	defaultPollMaxDelay     = "time.Minute" // 1 minute
+
+	bodyJSON = "json"
+	bodyFORM = "form"
 )
 
 var wellKnownTypes = []string{
@@ -58,7 +61,7 @@ var wellKnownTypes = []string{
 }
 
 type httpInfo struct {
-	verb, url, body string
+	verb, url, body, format string
 }
 
 func initRest(req *plugin.CodeGeneratorRequest) {
@@ -85,14 +88,18 @@ func genRestMethodCode(fd *descriptor.FileDescriptorProto, serv *descriptor.Serv
 	// 还有一些，没有写在uri里面的，从结构体里面解析
 	query := queryString(meth)
 	if len(query) > 0 {
-		code.WriteString("\tparams := make(map[string]string)\n\t")
-		code.WriteString(strings.Join(query, "\n\t"))
-		code.WriteString("\n\topts = append(opts, grequests.Params(params))\n")
+		param, err := getQueryStringContent(strings.Join(query, "\n\t"))
+		if err != nil {
+			return "", err
+		}
+		code.WriteString(param)
 	}
 	// 处理body
 	body := "nil"
+	format := bodyJSON
 	verb := strings.ToUpper(httpInfo.verb)
 	if httpInfo.body != "" {
+		format = httpInfo.format
 		if verb == http.MethodGet || verb == http.MethodDelete {
 			return "", fmt.Errorf("invalid use of body parameter for a get/delete method %q", meth.GetName())
 		}
@@ -102,7 +109,19 @@ func genRestMethodCode(fd *descriptor.FileDescriptorProto, serv *descriptor.Serv
 		}
 	}
 	if body != "nil" {
-		code.WriteString(fmt.Sprintf("\topts = append(opts, grequests.JSON(%s))\n", body))
+		switch format {
+		case bodyFORM:
+			forms := bodyForm(meth, httpInfo)
+			if len(forms) > 0 {
+				form, err := getBodyFormContent(strings.Join(forms, "\n\t"))
+				if err != nil {
+					return "", err
+				}
+				code.WriteString(form)
+			}
+		default:
+			code.WriteString(fmt.Sprintf("\topts = append(opts, grequests.JSON(%s))\n", body))
+		}
 	}
 	code.WriteString(fmt.Sprintf("\treturn c.session.%s(rawURL,opts...)", upperFirst(httpInfo.verb)))
 	return code.String(), nil
@@ -116,7 +135,19 @@ func getHTTPInfo(m *descriptor.MethodDescriptorProto) *httpInfo {
 	eHTTP := proto.GetExtension(m.GetOptions(), annotations.E_Http)
 
 	httpRule := eHTTP.(*annotations.HttpRule)
-	info := httpInfo{body: httpRule.GetBody()}
+	info := httpInfo{}
+	body := httpRule.GetBody()
+	if len(body) == 0 {
+		info.body = ""
+	}
+	bs := strings.Split(body, ",")
+	if len(bs) == 1 {
+		info.body = body
+		info.format = "json"
+	} else {
+		info.body = bs[0]
+		info.format = bs[1]
+	}
 
 	switch httpRule.GetPattern().(type) {
 	case *annotations.HttpRule_Get:
@@ -151,9 +182,31 @@ func baseURL(info *httpInfo) []string {
 	return tokens
 }
 
+func bodyForm(m *descriptor.MethodDescriptorProto, info *httpInfo) []string {
+	bodyField := lookupField(m.GetInputType(), info.body)
+	queryParams := map[string]*descriptor.FieldDescriptorProto{}
+	request := descInfo.Type[bodyField.GetTypeName()].(*descriptor.DescriptorProto)
+
+	// Possible query parameters are all leaf fields in the request or body.
+	pathToLeaf := getLeafs(request, nil)
+	// Iterate in sorted order to
+	for path, leaf := range pathToLeaf {
+		// If, and only if, a leaf field is not a path parameter or a body parameter,
+		// it is a query parameter.
+		if lookupField(request.GetName(), leaf.GetName()) == nil {
+			queryParams[path] = leaf
+		}
+	}
+
+	return formParams(queryParams)
+}
+
 func queryString(m *descriptor.MethodDescriptorProto) []string {
 	queryParams := queryParams(m)
+	return formParams(queryParams)
+}
 
+func formParams(queryParams map[string]*descriptor.FieldDescriptorProto) []string {
 	// We want to iterate over fields in a deterministic order
 	// to prevent spurious deltas when regenerating gapics.
 	fields := make([]string, 0, len(queryParams))
@@ -179,11 +232,7 @@ func queryString(m *descriptor.MethodDescriptorProto) []string {
 			b := strings.Builder{}
 			b.WriteString(fmt.Sprintf("%s, err := json.Marshal(in%s)\n", field.GetJsonName(), accessor))
 			b.WriteString("if err != nil {\n")
-			if m.GetOutputType() == emptyType {
-				b.WriteString("  return err\n")
-			} else {
-				b.WriteString("  return nil, err\n")
-			}
+			b.WriteString("  return nil, err\n")
 			b.WriteString("}\n")
 			b.WriteString(fmt.Sprintf("params[%q] = string(%s)", key, field.GetJsonName()))
 			paramAdd = b.String()
