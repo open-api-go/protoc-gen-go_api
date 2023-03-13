@@ -39,8 +39,9 @@ const (
 	defaultPollInitialDelay = "time.Second" // 1 second
 	defaultPollMaxDelay     = "time.Minute" // 1 minute
 
-	bodyJSON = "json"
-	bodyFORM = "form"
+	bodyJSON  = "json"
+	bodyFORM  = "form"
+	bodyMULTI = "multi"
 )
 
 var wellKnownTypes = []string{
@@ -114,6 +115,15 @@ func genRestMethodCode(fd *descriptor.FileDescriptorProto, serv *descriptor.Serv
 			forms := bodyForm(meth, httpInfo)
 			if len(forms) > 0 {
 				form, err := getBodyFormContent(strings.Join(forms, "\n\t"))
+				if err != nil {
+					return "", err
+				}
+				code.WriteString(form)
+			}
+		case bodyMULTI:
+			forms := bodyForm(meth, httpInfo)
+			if len(forms) > 0 {
+				form, err := getMultipartContent(strings.Join(forms, "\n\t"))
 				if err != nil {
 					return "", err
 				}

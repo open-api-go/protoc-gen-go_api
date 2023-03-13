@@ -69,6 +69,20 @@ var queryStringTmpl = `	// 处理query string
 	}
 `
 
+var bodyMultiPartTmpl = `	// 处理multipart的body
+	forms := make(map[string]string)
+	{{ .BodyForm | html }}
+	if len(forms) > 0 {
+	var bs string
+	for k, v := range forms {
+		bs = fmt.Sprintf("%s&%s=%s", bs, k, v)
+	}
+	headers := map[string]string {
+		"Content-Type": "multipart/form-data",
+	}
+	opts = append(opts, grequests.RequestBody(strings.NewReader(bs)), grequests.AddHeaders(headers))
+`
+
 func getGoapiContent(data *FileData) (string, error) {
 	cm, err := template.New("goapi_tmpl").Funcs(fn).Parse(goapiTmpl)
 	if err != nil {
@@ -113,6 +127,23 @@ func getQueryStringContent(param string) (string, error) {
 	})
 	if err != nil {
 		log.Println("execute query string template err: ", err)
+		return "", err
+	}
+	return bs.String(), nil
+}
+
+func getMultipartContent(forms string) (string, error) {
+	cm, err := template.New("multipart_tmpl").Funcs(fn).Parse(bodyMultiPartTmpl)
+	if err != nil {
+		log.Println("parse body multipart template err: ", err)
+		return "", err
+	}
+	bs := new(bytes.Buffer)
+	err = cm.Execute(bs, map[string]string{
+		"BodyForm": forms,
+	})
+	if err != nil {
+		log.Println("execute body multipart template err: ", err)
 		return "", err
 	}
 	return bs.String(), nil
