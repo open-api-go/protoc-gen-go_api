@@ -51,14 +51,15 @@ var bodyFormTmpl = `	// 处理form的body
 	forms := make(map[string]string)
 	{{ .BodyForm | html }}
 	if len(forms) > 0 {
-	var bs string
-	for k, v := range forms {
-		bs = fmt.Sprintf("%s&%s=%s", bs, k, v)
+		var bs string
+		for k, v := range forms {
+			bs = fmt.Sprintf("%s&%s=%s", bs, k, v)
+		}
+		headers := map[string]string {
+			"Content-Type": "application/x-www-form-urlencoded",
+		}
+		opts = append(opts, grequests.RequestBody(strings.NewReader(bs)), grequests.AddHeaders(headers))
 	}
-	headers := map[string]string {
-		"Content-Type": "application/x-www-form-urlencoded",
-	}
-	opts = append(opts, grequests.RequestBody(strings.NewReader(bs)), grequests.AddHeaders(headers))
 `
 
 var queryStringTmpl = `	// 处理query string
@@ -73,14 +74,15 @@ var bodyMultiPartTmpl = `	// 处理multipart的body
 	forms := make(map[string]string)
 	{{ .BodyForm | html }}
 	if len(forms) > 0 {
-	var bs string
-	for k, v := range forms {
-		bs = fmt.Sprintf("%s&%s=%s", bs, k, v)
+		var bs string
+		for k, v := range forms {
+			bs = fmt.Sprintf("%s&%s=%s", bs, k, v)
+		}
+		headers := map[string]string {
+			"Content-Type": "multipart/form-data",
+		}
+		opts = append(opts, grequests.RequestBody(strings.NewReader(bs)), grequests.AddHeaders(headers))
 	}
-	headers := map[string]string {
-		"Content-Type": "multipart/form-data",
-	}
-	opts = append(opts, grequests.RequestBody(strings.NewReader(bs)), grequests.AddHeaders(headers))
 `
 
 func getGoapiContent(data *FileData) (string, error) {
