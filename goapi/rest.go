@@ -193,9 +193,13 @@ func baseURL(info *httpInfo) []string {
 }
 
 func bodyForm(m *descriptor.MethodDescriptorProto, info *httpInfo) []string {
-	bodyField := lookupField(m.GetInputType(), info.body)
+
 	queryParams := map[string]*descriptor.FieldDescriptorProto{}
-	request := descInfo.Type[bodyField.GetTypeName()].(*descriptor.DescriptorProto)
+	request := descInfo.Type[m.GetInputType()].(*descriptor.DescriptorProto)
+	if info.body != "*" {
+		bodyField := lookupField(m.GetInputType(), info.body)
+		request = descInfo.Type[bodyField.GetTypeName()].(*descriptor.DescriptorProto)
+	}
 
 	// Possible query parameters are all leaf fields in the request or body.
 	pathToLeaf := getLeafs(request, nil)
