@@ -14,8 +14,15 @@ package {{ .GoPackage }}
 import (
 	context "context"
 	fmt "fmt"
+	strings "strings"
 	grequests "github.com/open-api-go/grequests"
 )
+
+// Reference imports to suppress errors if they are not otherwise used.
+var	_ = context.Background
+var	_ = fmt.Println
+var	_ = strings.Trim
+var	_ = grequests.Get
 
 {{ range .Services }}
 // Client API for {{ .ServName }} service
