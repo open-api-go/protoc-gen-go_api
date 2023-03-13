@@ -58,14 +58,14 @@ var bodyFormTmpl = `	// 处理form的body
 	bodyForms := make(map[string]string)
 	{{ .BodyForm | html }}
 	if len(bodyForms) > 0 {
-		var bs string
+		bs := make([]string, 0, len(bodyForms))	
 		for k, v := range bodyForms {
-			bs = fmt.Sprintf("%s&%s=%s", bs, k, v)
+			bs = append(bs, fmt.Sprintf("%s=%s", k, v))
 		}
 		headers := map[string]string {
 			"Content-Type": "application/x-www-form-urlencoded",
 		}
-		opts = append(opts, grequests.RequestBody(strings.NewReader(bs)), grequests.AddHeaders(headers))
+		opts = append(opts, grequests.RequestBody(strings.NewReader(strings.Join(bs, "&"))), grequests.AddHeaders(headers))
 	}
 `
 
